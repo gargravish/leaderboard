@@ -6,17 +6,17 @@ import time
 import json
 
 # Database connection setup
-db_user = 'postgres'
-db_pass = 'ravish'
-db_name = 'users'
-db_host = '34.87.40.107'
-db_port = '5435'
+db_user = 
+db_pass = 
+db_name = 
+db_host = 
+db_port = 
 # PostgreSQL connection string
 database_url = f"postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 engine = create_engine(database_url)
 
-project_id = "raves-altostrat"
-subscription_id = "ce_tech_day_leaderboard-sub"
+project_id = 
+subscription_id = 
 subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_id)
 
