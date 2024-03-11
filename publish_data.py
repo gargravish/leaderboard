@@ -4,8 +4,8 @@ from sqlalchemy import create_engine
 from time import sleep
 import json
 
-project_id = "raves-altostrat"
-topic_id = "ce_tech_day_leaderboard"
+project_id =
+topic_id =
 
 publisher = pubsub_v1.PublisherClient()
 topic_path = publisher.topic_path(project_id, topic_id)
