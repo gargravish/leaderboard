@@ -29,11 +29,11 @@ if auto_refresh:
     st.session_state.sleep_time = number
 
 # Database connection setup
-db_user = 'postgres'
-db_pass = 'ravish'
-db_name = 'users'
-db_host = '34.87.40.107'
-db_port = '5435'
+db_user = 
+db_pass = 
+db_name = 
+db_host = 
+db_port = 
 # PostgreSQL connection string
 database_url = f"postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 engine = create_engine(database_url)
