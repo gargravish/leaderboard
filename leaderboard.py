@@ -1,4 +1,3 @@
-
 # Keep the main thread alive to listen to messages.
 import streamlit as st
 st.set_page_config(layout="wide")
@@ -6,7 +5,6 @@ import os
 import pandas as pd
 import numpy as np
 import time
-from google.cloud import firestore
 import pydeck as pdk
 from shapely import wkt
 import folium
@@ -15,6 +13,13 @@ from streamlit_folium import st_folium
 import psycopg2
 from sqlalchemy import create_engine
 import json
+from google.cloud import bigquery
+import pandas_gbq
+
+
+project_id = 'fire-344022'
+dataset_id = 'leaderboard'
+table = 'accumulated_points'
 
 if not "sleep_time" in st.session_state:
     st.session_state.sleep_time = 30
@@ -29,14 +34,13 @@ if auto_refresh:
     st.session_state.sleep_time = number
 
 # Database connection setup
-db_user = 
-db_pass = 
-db_name = 
-db_host = 
-db_port = 
+#db_user = "postgres"
+#db_name = "leaderboard"
+#db_host = "10.123.80.3"
+#db_port = 5432
 # PostgreSQL connection string
-database_url = f"postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
-engine = create_engine(database_url)
+#database_url = f"postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+#engine = create_engine(database_url)
 
 start_wkt = "POINT (-0.152564 51.503921)"
 end_wkt = "POINT (-0.152628 51.503938)"
@@ -91,20 +95,22 @@ m.fit_bounds(route.get_bounds())
 
 def get_participants_location():
     file = 'step_track.csv'
-    headers = ['step_number','lon','lat']
+    headers = ['points','lon','lat']
     df = pd.read_csv(file,names=headers,header=None)
     return df
 
 #st_data = st_folium(m, height=500,width=750)
 # Function to render the map with pydeck
+import numpy as np
 
 df_front = get_participants_location()
 df_front = df_front.drop(df_front.index[0])
 df_front['lat'] = pd.to_numeric(df_front['lat'],errors='coerce')
 df_front['lon'] = pd.to_numeric(df_front['lon'],errors='coerce')
+df_front['points'] = df_front['points'].astype(int)
 print(df_front)
 
-conn = engine.connect()
+#conn = engine.connect()
 sql_query = """
 WITH RankedParticipants AS (
   SELECT
@@ -124,11 +130,35 @@ FROM
 WHERE
   rn = 1;
 """
-df_db = pd.read_sql_query(sql_query, conn)
-conn.close()
-print(df_db)
+#df_db = pd.read_sql_query(sql_query, conn)
+#conn.close()
+#print(df_db)
 
-merged_df = pd.merge(df_db, df_front[['step_number', 'lat', 'lon']], on='step_number', how='left')
+# Construct your BigQuery client
+#client = bigquery.Client(project='fire-344022')
+
+#df = bpd.read_gbq("fire-344022.leaderboard.accumulated_points")
+
+#Construct the BigQuery SQL query
+query = """
+SELECT team, max(points) as points
+FROM `fire-344022.leaderboard.accumulated_points`
+group by team
+ORDER BY points DESC
+"""
+
+df_db = pandas_gbq.read_gbq(query,dialect="standard",project_id=project_id)
+
+# Create a BigFrame DataFrame
+#df_db = bigframes.from_query(query, client)
+
+# Display the results
+print(df_db.head())
+print(df_db.dtypes)
+print(df_front.dtypes)
+
+#merged_df = pd.merge(df_db, df_front[['points', 'lat', 'lon']], on='points', how='left')
+merged_df = pd.merge(df_db, df_front[['points', 'lat', 'lon']], on='points', how='left')
 print(merged_df.dtypes)
 print(merged_df)
 
@@ -173,12 +203,14 @@ def assign_icons_to_participants(participants, icon_dir, base_url, mapping_file)
 icon_dir = 'icons'  # Server directory where icons are stored
 base_url = 'icons'  # URL to access icons
 mapping_file = 'participant_icon_mapping.json'  # JSON file to store mapping
-participants = merged_df.participant_id
+#participants = merged_df.participant_id
+participants = merged_df.team
 icon_mapping = assign_icons_to_participants(participants, icon_dir, base_url, mapping_file)
 
 marker_cluster = MarkerCluster().add_to(m)
 
-for participant_id, step_number, lat, lon in zip(merged_df.participant_id, merged_df.step_number, merged_df.lat.values, merged_df.lon.values):
+#for participant_id, step_number, lat, lon in zip(merged_df.participant_id, merged_df.step_number, merged_df.lat.values, merged_df.lon.values):
+for participant_id, step_number, lat, lon in zip(merged_df.team, merged_df.points, merged_df.lat.values, merged_df.lon.values):
     for participant, icon_url in icon_mapping.items():
         if participant_id == participant:
             folium.Marker(
@@ -193,10 +225,11 @@ st_data = st_folium(m,
     height=800,
     width=1500,
 )
-leaderboard_df = merged_df[['participant_id','step_number']]
-leaderboard_df.rename(columns={'step_number':'Current_Step'},inplace=True)
-leaderboard_df.rename(columns={'participant_id':'Participant_ID'},inplace=True)
-leaderboard_df['Total_Step_Count'] = '15'
+#leaderboard_df = merged_df[['participant_id','step_number']]
+leaderboard_df = merged_df[['team','points']]
+#leaderboard_df.rename(columns={'step_number':'Current_Step'},inplace=True)
+#leaderboard_df.rename(columns={'participant_id':'Participant_ID'},inplace=True)
+#leaderboard_df['Total_Step_Count'] = '15'
 st.dataframe(leaderboard_df)
 
 if auto_refresh:
