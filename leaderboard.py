@@ -10,15 +10,14 @@ from shapely import wkt
 import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
-import psycopg2
 from sqlalchemy import create_engine
 import json
 from google.cloud import bigquery
 import pandas_gbq
 
 
-project_id = 'fire-344022'
-dataset_id = 'leaderboard'
+project_id = 'ajitce'
+dataset_id = 'formulae_data'
 table = 'accumulated_points'
 
 if not "sleep_time" in st.session_state:
@@ -141,9 +140,9 @@ WHERE
 
 #Construct the BigQuery SQL query
 query = f"""
-SELECT team, max(points) as points
+SELECT team_name, max(points) as points
 FROM `{project_id}.{dataset_id}.{table}`
-group by team
+group by team_name
 ORDER BY points DESC
 """
 
@@ -204,13 +203,13 @@ icon_dir = 'icons'  # Server directory where icons are stored
 base_url = 'icons'  # URL to access icons
 mapping_file = 'participant_icon_mapping.json'  # JSON file to store mapping
 #participants = merged_df.participant_id
-participants = merged_df.team
+participants = merged_df.team_name
 icon_mapping = assign_icons_to_participants(participants, icon_dir, base_url, mapping_file)
 
 marker_cluster = MarkerCluster().add_to(m)
 
 #for participant_id, step_number, lat, lon in zip(merged_df.participant_id, merged_df.step_number, merged_df.lat.values, merged_df.lon.values):
-for participant_id, step_number, lat, lon in zip(merged_df.team, merged_df.points, merged_df.lat.values, merged_df.lon.values):
+for participant_id, step_number, lat, lon in zip(merged_df.team_name, merged_df.points, merged_df.lat.values, merged_df.lon.values):
     for participant, icon_url in icon_mapping.items():
         if participant_id == participant:
             folium.Marker(
@@ -226,7 +225,7 @@ st_data = st_folium(m,
     width=1500,
 )
 #leaderboard_df = merged_df[['participant_id','step_number']]
-leaderboard_df = merged_df[['team','points']]
+leaderboard_df = merged_df[['team_name','points']]
 #leaderboard_df.rename(columns={'step_number':'Current_Step'},inplace=True)
 #leaderboard_df.rename(columns={'participant_id':'Participant_ID'},inplace=True)
 #leaderboard_df['Total_Step_Count'] = '15'
