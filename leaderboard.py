@@ -140,9 +140,9 @@ WHERE
 #df = bpd.read_gbq("fire-344022.leaderboard.accumulated_points")
 
 #Construct the BigQuery SQL query
-query = """
+query = f"""
 SELECT team, max(points) as points
-FROM `fire-344022.leaderboard.accumulated_points`
+FROM `{project_id}.{dataset_id}.{table}`
 group by team
 ORDER BY points DESC
 """
