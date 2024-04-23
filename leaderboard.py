@@ -15,8 +15,8 @@ import json
 from google.cloud import bigquery
 import pandas_gbq
 
-
-project_id = 'ajitce'
+#make sure below project id is correct and it's pointing to a project where accumulated_points table capturing teams points
+project_id = 'ajitce'  
 dataset_id = 'formulae_data'
 table = 'accumulated_points'
 
@@ -107,7 +107,7 @@ df_front = df_front.drop(df_front.index[0])
 df_front['lat'] = pd.to_numeric(df_front['lat'],errors='coerce')
 df_front['lon'] = pd.to_numeric(df_front['lon'],errors='coerce')
 df_front['points'] = df_front['points'].astype(int)
-print(df_front)
+#print(df_front)
 
 #conn = engine.connect()
 sql_query = """
@@ -142,24 +142,31 @@ WHERE
 query = f"""
 SELECT team_name, max(points) as points
 FROM `{project_id}.{dataset_id}.{table}`
+where points <= 10000
 group by team_name
 ORDER BY points DESC
 """
 
+dash_query = f"""
+SELECT team_name, max(points) as points
+FROM `{project_id}.{dataset_id}.{table}`
+group by team_name
+ORDER BY points DESC
+"""
 df_db = pandas_gbq.read_gbq(query,dialect="standard",project_id=project_id)
-
+dash_df = pandas_gbq.read_gbq(dash_query,dialect="standard",project_id=project_id)
 # Create a BigFrame DataFrame
 #df_db = bigframes.from_query(query, client)
 
 # Display the results
-print(df_db.head())
-print(df_db.dtypes)
-print(df_front.dtypes)
+#print(df_db.head())
+#print(df_db.dtypes)
+#print(df_front.dtypes)
 
 #merged_df = pd.merge(df_db, df_front[['points', 'lat', 'lon']], on='points', how='left')
 merged_df = pd.merge(df_db, df_front[['points', 'lat', 'lon']], on='points', how='left')
-print(merged_df.dtypes)
-print(merged_df)
+#print(merged_df.dtypes)
+#print(merged_df)
 
 def load_icon_mapping(file_path):
     """Load the icon mapping from a JSON file."""
@@ -220,16 +227,16 @@ for participant_id, step_number, lat, lon in zip(merged_df.team_name, merged_df.
             ).add_to(marker_cluster)
 
 st_data = st_folium(m, 
-#    feature_group_to_add=fg,
-    height=800,
-    width=1500,
-)
+        #    feature_group_to_add=fg,
+            height=800,
+                width=1500,
+                )
 #leaderboard_df = merged_df[['participant_id','step_number']]
 leaderboard_df = merged_df[['team_name','points']]
 #leaderboard_df.rename(columns={'step_number':'Current_Step'},inplace=True)
 #leaderboard_df.rename(columns={'participant_id':'Participant_ID'},inplace=True)
 #leaderboard_df['Total_Step_Count'] = '15'
-st.dataframe(leaderboard_df)
+st.dataframe(dash_df)
 
 if auto_refresh:
     time.sleep(number)
