@@ -142,7 +142,7 @@ WHERE
 query = f"""
 SELECT team_name, max(points) as points
 FROM `{project_id}.{dataset_id}.{table}`
-where points <= 10000
+where points <= 15000
 group by team_name
 ORDER BY points DESC
 """
